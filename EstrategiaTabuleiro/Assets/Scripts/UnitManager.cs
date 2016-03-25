@@ -6,13 +6,19 @@ public class UnitManager : MonoBehaviour {
     //Definição de Variáveis
     public int MaxActions, curActions;
     public bool Selected;
-    public GameObject UnitSelectedIndicator;
+    public GameObject UnitSelectedIndicator, PlayerManager, GameManager;
     //Definição de Variáveis
 
-    public void RecarregarAcoes()
+    public void ReloadActions()
     {
 
         curActions = MaxActions;
+    }
+
+    void Start()
+    {
+        PlayerManager = GameObject.Find("_PlayerManager");
+        GameManager = GameObject.Find("_GameManager");
     }
 
     void OnMouseDown()
@@ -24,8 +30,8 @@ public class UnitManager : MonoBehaviour {
         else
         {
             //O player só pode selecionar a unidade caso ela tenha mais de uma ação, caso contrário, não poderá nem sequer selecionar, quanto menos mover.
-            if (curActions >= 1)
-            {
+            if (curActions >= 1 && GameManager.GetComponent<GameManager>().curTurn == PlayerManager.GetComponent<PlayerManager>().MyTurn)
+                {
                 // Aqui como uma outra unidade pode estar selecionada, eu procuro todas as unidades da mesma forma que eu fiz ali em cima, e então des-seleciono elas
                 GameObject[] AllFriendlyUnits = GameObject.FindGameObjectsWithTag("Unit");
 

@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
 using System.Collections;
 
-public class TileManager : MonoBehaviour {
+public class TileManager : NetworkBehaviour {
 
     //Definição de variáveis
     public Color Idle, Hovering, Moveable;
@@ -9,6 +10,8 @@ public class TileManager : MonoBehaviour {
     public Vector3 NormalScale, NormalPosition;
     public float TargetYPos;
     public GameObject SelectedUnit;
+    public GameManager gameManager;
+    public PlayerManager playerManager;
     //Definição de variáveis
 
     void Start()
@@ -20,6 +23,10 @@ public class TileManager : MonoBehaviour {
 
         //Como o código é baseado na cor atual do material, estou colocando todas as tiles no inicio do jogo na cor Idle para depois poder verificar se esta é a cor atual sem ter conflitos
         GetComponent<MeshRenderer>().material.color = Idle;
+
+        playerManager = GameObject.Find("_PlayerManager").GetComponent<PlayerManager>();
+        gameManager = GameObject.Find("_GameManager").GetComponent<GameManager>();
+        
     }
 
     void OnMouseEnter()
@@ -45,45 +52,36 @@ public class TileManager : MonoBehaviour {
         this.transform.position = NormalPosition;
     }
 
-
     void Update()
     {
+
+        Debug.Log(GameObject.FindGameObjectWithTag("GameManager").name);
+
+        //Aqui carrego a variável com todos os objetos da cena que possuem o Tag "Unit"
+        GameObject[] AllFriendlyUnits = GameObject.FindGameObjectsWithTag("Unit");
+
+        //Este For loop, é para identificar qual das unidades do jogador que está atualmente selecionado e salvá-lo na variável "SelectedUnit"
+        for (int i = 0; i < AllFriendlyUnits.Length; i++)
         {
-
-            //Aqui carrego a variável com todos os objetos da cena que possuem o Tag "Unit"
-            GameObject[] AllFriendlyUnits = GameObject.FindGameObjectsWithTag("Unit");
-
-            //Este For loop, é para identificar qual das unidades do jogador que está atualmente selecionado e salvá-lo na variável "SelectedUnit"
-            for (int i = 0; i < AllFriendlyUnits.Length; i++)
+            if (gameManager.curTurn == playerManager.MyTurn && AllFriendlyUnits[i].GetComponent<UnitManager>().enabled == true && AllFriendlyUnits[i].GetComponent<UnitManager>().Selected == true)
             {
-                if (AllFriendlyUnits[i].GetComponent<UnitManager>().Selected == true)
+                SelectedUnit = AllFriendlyUnits[i].gameObject;
+            }
+        }
+
+        if (SelectedUnit != null) //TODO: Ainda é preciso pedir a quantidade de ações que uma unidade pode executar
+        {
+            //Esta parte serve para mostrar melhor os tiles para os quais o player pode se movimentar
+            if (Vector3.Distance(this.transform.position, SelectedUnit.transform.position) <= 1.5f)
+            {
+                if (GetComponent<MeshRenderer>().material.color == Idle)
                 {
-                    SelectedUnit = AllFriendlyUnits[i].gameObject;
+                    GetComponent<MeshRenderer>().material.color = Moveable;
+                    this.transform.position = new Vector3(NormalPosition.x, TargetYPos, NormalPosition.z);
                 }
             }
+            else //Este Else des-seleciona as tiles que estão longe demais da unidade selecionada.
 
-            if (SelectedUnit != null) //TODO: Ainda é preciso pedir a quantidade de ações que uma unidade pode executar
-            {
-                //Esta parte serve para mostrar melhor os tiles para os quais o player pode se movimentar
-                if (Vector3.Distance(this.transform.position, SelectedUnit.transform.position) <= 1.5f)
-                {
-                    if (GetComponent<MeshRenderer>().material.color == Idle)
-                    {
-                        GetComponent<MeshRenderer>().material.color = Moveable;
-                        this.transform.position = new Vector3(NormalPosition.x, TargetYPos, NormalPosition.z);
-                    }
-                }
-                else //Este Else des-seleciona as tiles que estão longe demais da unidade selecionada.
-
-                {
-                    if (GetComponent<MeshRenderer>().material.color == Moveable)
-                    {
-                        GetComponent<MeshRenderer>().material.color = Idle;
-                        this.transform.position = NormalPosition;
-                    }
-                }
-            }
-            else //Este Else serve para des-selecionar as tiles quando o player for des-selecionado.
             {
                 if (GetComponent<MeshRenderer>().material.color == Moveable)
                 {
@@ -92,19 +90,25 @@ public class TileManager : MonoBehaviour {
                 }
             }
         }
-    }
-
-    void OnMouseDown()
-    {
-
-        if( SelectedUnit != null ) //Ainda é preciso pedir a quantidade de ações que uma unidade pode executar
+        else //Este Else serve para des-selecionar as tiles quando o player for des-selecionado.
         {
-            if( Vector3.Distance( this.transform.position , SelectedUnit.transform.position ) <= 1.5f)
+            if (GetComponent<MeshRenderer>().material.color == Moveable)
             {
-                SelectedUnit.transform.position = this.transform.position;
-                SelectedUnit.GetComponent<UnitManager>().curActions--;
+                GetComponent<MeshRenderer>().material.color = Idle;
+                this.transform.position = NormalPosition;
             }
         }
     }
 
+    void OnMouseDown()
+    {
+        if( SelectedUnit != null ) //Ainda é preciso pedir a quantidade de ações que uma unidade pode executar
+        {
+            if( Vector3.Distance( this.transform.position , SelectedUnit.transform.position ) <= 1.5f)
+            {
+                SelectedUnit.transform.position = new Vector3(this.transform.position.x, this.transform.position.y + 0.15f, this.transform.position.z ) ;
+                SelectedUnit.GetComponent<UnitManager>().curActions--;
+            }
+        }
+    }
 }
